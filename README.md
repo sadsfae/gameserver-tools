@@ -4,7 +4,7 @@ gameserver-tools
 This is a collection of management tools for deploying, running and managing open source gameservers on Linux.
 
 **What does it do?**
-   - Prompt-driven CLI installation (with flags for automation)
+   - Automated CLI installation of games
    - Generation of startup scripts
    - Automated game statistics generation into HTML/PNG
       - Requires qstat (quakestat), html2ps, imagemagick convert
@@ -24,10 +24,14 @@ This is a collection of management tools for deploying, running and managing ope
 **Contents**
 
    - install-$game-server.py
-      - Installs the respective game server type
-      - Can be run interactively or with flags (unattended)
+      - Installs the respective game server type with CLI options
    - $game/qstat-$game.sh
       - Parses game statistics and generates HTML and PNG output
+      - Examples:
+         - http://funcamp.net/w/ut.html
+	 - http://funcamp.net/w/ut.png
+	 - http://funcamp.net/w/et.html
+	 - http://funcamp.net/w/et.html
    - $game/config-generate-$game.sh
       - Generates a usable configuration file.
    - $game/startup-generate-$game.sh
