@@ -24,18 +24,18 @@ This is a collection of management tools for deploying, running and managing ope
 **Contents**
 
    - install-$game-server.py
-      * Installs the respective game server type
-      * Can be run interactively or with flags (unattended)
+      - Installs the respective game server type
+      - Can be run interactively or with flags (unattended)
    - $game/qstat-$game.sh
-      * Parses game statistics and generates HTML and PNG output
+      - Parses game statistics and generates HTML and PNG output
    - $game/config-generate-$game.sh
-      * Generates a usable configuration file.
+      - Generates a usable configuration file.
    - $game/startup-generate-$game.sh
-      * Generates a usable gameserver startup script
+      - Generates a usable gameserver startup script
    - $game/$game-start-server.example.sh
-      * Example gameserver startup script
+      - Example gameserver startup script
 
-`
+```
 ├── enemyterritory
 │   ├── config-generate-et.sh
 │   ├── et-start-server.example.sh
@@ -47,4 +47,4 @@ This is a collection of management tools for deploying, running and managing ope
     ├── qstat-urbanterror.sh
     ├── startup-generate-ut.sh
     └── ut-start-server.example.sh
-`
+```
