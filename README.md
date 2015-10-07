@@ -4,14 +4,14 @@ gameserver-tools
 This is a collection of management tools for deploying, running and managing open source gameservers on Linux.
 
 **What does it do?**
-   - Automated CLI installation of games
-   - Generation of startup scripts
-   - Automated game statistics generation into HTML/PNG
+   - Automated CLI installation of games on Linux host (WIP)
+   - Generation of startup scripts (WIP)
+   - Automated game statistics generation into HTML/PNG (COMPLETE)
       - Requires qstat (quakestat), html2ps, imagemagick convert
  
 **Games Supported**
 
-   - Urban Terror 4.2.023 (Realistic first person shooter)
+   - Urban Terror 4.2.023
       * http://urbanterror.info
       * https://en.wikipedia.org/wiki/Urban_Terror
       * http://hobo.house/2015/10/03/play-urban-terror/
@@ -28,10 +28,10 @@ This is a collection of management tools for deploying, running and managing ope
    - $game/qstat-$game.sh
       - Parses game statistics and generates HTML and PNG output
       - Examples:
-         - http://funcamp.net/w/ut.html
-	 - http://funcamp.net/w/ut.png
-	 - http://funcamp.net/w/et.html
-	 - http://funcamp.net/w/et.html
+         * http://funcamp.net/w/ut.html
+	 * http://funcamp.net/w/ut.png
+	 * http://funcamp.net/w/et.html
+	 * http://funcamp.net/w/et.html
    - $game/config-generate-$game.sh
       - Generates a usable configuration file.
    - $game/startup-generate-$game.sh
