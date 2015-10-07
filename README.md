@@ -28,10 +28,10 @@ This is a collection of management tools for deploying, running and managing ope
    - $game/qstat-$game.sh
       - Parses game statistics and generates HTML and PNG output
       - Examples:
-         * http://funcamp.net/w/ut.html
-	 * http://funcamp.net/w/ut.png
-	 * http://funcamp.net/w/et.html
-	 * http://funcamp.net/w/et.html
+         - http://funcamp.net/w/ut.html 
+         - http://funcamp.net/w/ut.png
+         - http://funcamp.net/w/et.html
+         - http://funcamp.net/w/et.html
    - $game/config-generate-$game.sh
       - Generates a usable configuration file.
    - $game/startup-generate-$game.sh
