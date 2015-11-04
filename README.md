@@ -21,7 +21,7 @@ This is a collection of management tools for deploying, running and managing ope
       * https://en.wikipedia.org/wiki/Wolfenstein:_Enemy_Territory
       * http://hobo.house/2015/09/30/play-enemy-territory/
 
-   - Enemy Territory:Legacy 1.74
+   - Enemy Territory:Legacy 2.74
       * http://www.etlegacy.com
       * https://github.com/etlegacy/etlegacy
 
