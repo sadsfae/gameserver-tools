@@ -4,7 +4,7 @@ gameserver-tools
 This is a collection of management tools for deploying, running and managing open source gameservers on Linux.
 
 **What does it do?**
-   - Automated CLI installation of games on Linux host (WIP)
+   - Ansible-driven installation of games on Linux host (WIP)
    - Generation of startup scripts (WIP)
    - Automated game statistics generation into HTML/PNG (COMPLETE)
       - Requires qstat (quakestat), html2ps, imagemagick convert
