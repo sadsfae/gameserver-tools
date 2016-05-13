@@ -7,8 +7,6 @@
   local_action: command whoami
   register: youruser
 
-#- debug: msg="user is {{youruser.stdout}}"
-
 - name: Setup 7days user
   user: name=7days
           shell=/sbin/nologin generate_ssh_key=yes
@@ -39,18 +37,36 @@
     - libstdc++.i686
 
 - name: Setup SteamCMD path
-  file: path=/home/7days/steamcmd state=directory
+  file: 
+    path=/home/7days/steamcmd 
+    state=directory
+    owner=7days
+    recurse=yes
+    mode=755
     
+- name: Setup 7days server path
+  file: 
+    path=/home/7days/server
+    state=directory
+    owner=7days
+    recurse=yes
+    mode=755
+
 - name: Download SteamCMD
   get_url:
     url=https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz dest=/home/7days/steamcmd
 
 - name: Install/update SteamCMD
-  unarchive: src=//home/7days/steamcmd/steamcmd_linux.tar.gz dest=/home/7days/steamcmd/ copy=no
+  unarchive: 
+    src=//home/7days/steamcmd/steamcmd_linux.tar.gz 
+    dest=/home/7days/steamcmd/ 
+    copy=no
+    owner=7days
+    mode=755
   ignore_errors: true
 
 - name: Running SteamCMD
-  debug: msg="test"
+  command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir +login {{steamuser}} {{steampass}}/home/7days/server/ +app_update 294420 +quit
 # SELinux boolean for nginx
 #- name: Apply SELinux boolean httpd_can_network_connect
 #  seboolean: name=httpd_can_network_connect state=yes persistent=yes
