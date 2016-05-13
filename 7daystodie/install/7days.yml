@@ -7,7 +7,4 @@
   remote_user: root
   roles:
     - { role: 7server }
-    - { role: 7config }
-    - { role: nginx }
-    - { role: kibana }
 

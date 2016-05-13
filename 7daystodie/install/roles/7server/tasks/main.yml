@@ -1,0 +1,201 @@
+---
+#
+# Install/run 7daystodie server
+#
+
+- name: Gathering user info
+  local_action: command whoami
+  register: youruser
+
+#- debug: msg="user is {{youruser.stdout}}"
+
+- name: Setup 7days user
+  user: name=7days
+          shell=/sbin/nologin generate_ssh_key=yes
+          ssh_key_bits=2048
+          ssh_key_file=.ssh/id_rsa
+
+- authorized_key:
+    user=7days
+    key="{{ lookup('file', '/home/"{{youruser.stdout}}"/.ssh/id_rsa.pub') }}"
+    manage_dir=yes
+  ignore_errors: true
+  #- name: Import EPEL GPG Key
+  #rpm_key: key=https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+  #  state=present
+
+  #- name: Check for EPEL repo
+  #yum: name=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+  #  state=present
+
+- name: Install dependencies for SteamCMD
+  yum: name={{ item }} state=present
+  become: true
+  with_items:
+    - glibc.i686
+    - mesa-libGLU
+    - libXcursor
+    - libXrandr
+    - libstdc++.i686
+
+- name: Setup SteamCMD path
+  file: path=/home/7days/steamcmd state=directory
+    
+- name: Download SteamCMD
+  get_url:
+    url=https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz dest=/home/7days/steamcmd
+
+- name: Install/update SteamCMD
+  unarchive: src=//home/7days/steamcmd/steamcmd_linux.tar.gz dest=/home/7days/steamcmd/ copy=no
+  ignore_errors: true
+
+- name: Running SteamCMD
+  debug: msg="test"
+# SELinux boolean for nginx
+#- name: Apply SELinux boolean httpd_can_network_connect
+#  seboolean: name=httpd_can_network_connect state=yes persistent=yes
+
+# Set standard nginx ports if we're not pointing towards an undercloud
+- name: Assign 7days server port values
+  set_fact:
+    seven_port: 80
+    data_port: 8080
+    when: ((seven_port is none) and (data_port is none))
+
+# deploy 7days to die configs
+#- name: Generating 7days server config
+#  template:
+#    src=7days.conf.j2
+#    dest=/home/7days/server7days/7days.conf
+#    owner=root
+#    group=root
+#    mode=0644
+#  become: true
+#  register: 7days_needs_restart
+
+# deploy basic nginx.conf 8080 vhost
+#- name: Generating something else here
+#  template:
+#    src=nginx.conf.j2
+#    dest=/etc/nginx/nginx.conf
+#    owner=root
+#    group=root
+#    mode=0644
+#  become: true
+
+# start nginx service
+#- name: Start nginx service
+#  command: systemctl restart nginx.service
+#  ignore_errors: true
+#  when: nginx_needs_restart != 0
+#
+#- name: Set nginx to start on boot
+#  command: systemctl enable nginx.service
+#  ignore_errors: true
+
+# we need TCP/80 and TCP/8080 open
+# determine firewall status and take action
+# 1) use firewall-cmd if firewalld is utilized
+# 2) insert iptables rule if iptables is used
+
+# Firewalld
+- name: Determine if firewalld is in use
+  shell: systemctl is-enabled firewalld.service | egrep -qv 'masked|disabled'
+  ignore_errors: true
+  register: firewalld_in_use
+
+- name: Determine if firewalld is active
+  shell: systemctl is-active firewalld.service | grep -vq inactive
+  ignore_errors: true
+  register: firewalld_is_active
+
+- name: Determine if TCP/{{seven_port}} is already active
+  shell: firewall-cmd --list-ports | egrep -q "^{{seven_port}}/tcp"
+  ignore_errors: true
+  register: firewalld_tcp80_exists
+
+# add firewall rule via firewall-cmd
+- name: Add firewall rule for TCP/{{seven_port}} (firewalld)
+  command: "{{ item }}"
+  with_items:
+    - firewall-cmd --zone=public --add-port={{seven_port}}/tcp --permanent
+    - firewall-cmd --reload
+  ignore_errors: true
+  become: true
+  when: firewalld_in_use.rc == 0 and firewalld_is_active.rc == 0 and firewalld_tcp80_exists.rc != 0
+
+# iptables-services
+- name: check firewall rules for TCP/{{seven_port}} (iptables-services)
+  shell: grep "dport {{seven_port}} \-j ACCEPT" /etc/sysconfig/iptables | wc -l
+  ignore_errors: true
+  register: iptables_tcp80_exists
+  failed_when: iptables_tcp80_exists == 127
+
+- name: Add firewall rule for TCP/{{seven_port}} (iptables-services)
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    line: '-A INPUT -p tcp -m tcp --dport {{seven_port}} -j ACCEPT'
+    regexp: '^INPUT -i lo -j ACCEPT'
+    insertbefore: '-A INPUT -i lo -j ACCEPT'
+    backup: yes
+  when: firewalld_in_use.rc != 0 and firewalld_is_active.rc != 0 and iptables_tcp80_exists.stdout|int == 0
+  register: iptables_needs_restart
+
+- name: Restart iptables-services for TCP/{{seven_port}} (iptables-services)
+  shell: systemctl restart iptables.service
+  ignore_errors: true
+  when: iptables_needs_restart != 0 and firewalld_in_use.rc != 0 and firewalld_is_active.rc != 0
+
+# Firewalld
+- name: Determine if firewalld is in use
+  shell: systemctl is-enabled firewalld.service | egrep -qv 'masked|disabled'
+  ignore_errors: true
+  register: firewalld_in_use
+
+- name: Determine if firewalld is active
+  shell: systemctl is-active firewalld.service | grep -vq inactive
+  ignore_errors: true
+  register: firewalld_is_active
+
+- name: Determine if TCP/{{data_port}} is already active
+  shell: firewall-cmd --list-ports | egrep -q "^{{data_port}}/tcp"
+  ignore_errors: true
+  register: firewalld_tcp8080_exists
+
+# add firewall rule via firewall-cmd
+- name: Add firewall rule for TCP/{{data_port}} (firewalld)
+  command: "{{ item }}"
+  with_items:
+    - firewall-cmd --zone=public --add-port={{data_port}}/tcp --permanent
+    - firewall-cmd --reload
+  ignore_errors: true
+  become: true
+  when: firewalld_in_use.rc == 0 and firewalld_is_active.rc == 0 and firewalld_tcp8080_exists.rc != 0
+
+# iptables-services
+- name: check firewall rules for TCP/{{data_port}} (iptables-services)
+  shell: grep "dport {{data_port}} \-j ACCEPT" /etc/sysconfig/iptables | wc -l
+  ignore_errors: true
+  register: iptables_tcp8080_exists
+  failed_when: iptables_tcp8080_exists == 127
+
+- name: Add firewall rule for TCP/{{data_port}} (iptables-services)
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    line: '-A INPUT -p tcp -m tcp --dport {{data_port}} -j ACCEPT'
+    regexp: '^INPUT -i lo -j ACCEPT'
+    insertbefore: '-A INPUT -i lo -j ACCEPT'
+    backup: yes
+  when: firewalld_in_use.rc != 0 and firewalld_is_active.rc != 0 and iptables_tcp8080_exists.stdout|int == 0
+  register: iptables_needs_restart
+
+- name: Restart iptables-services for TCP/{{data_port}} (iptables-services)
+  shell: systemctl restart iptables.service
+  ignore_errors: true
+  when: iptables_needs_restart != 0 and firewalld_in_use.rc != 0 and firewalld_is_active.rc != 0
+
+#- name: Disable EPEL Repo
+#  ini_file: dest=/etc/yum.repos.d/epel.repo
+#    section=epel
+#    option=enabled
+#    value=0
