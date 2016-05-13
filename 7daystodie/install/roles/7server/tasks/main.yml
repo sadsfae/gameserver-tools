@@ -58,12 +58,6 @@
     mode=755
   ignore_errors: true
 
-- name: Check Registration
-  set_fact:
-    steam_user: changemeinvars
-    steam_pass: changemeinvars
-  when: ((steam_user is none) and (steam_pass is none))
-
 - name: Assign 7days server port values
   set_fact:
     seven_port: 26900
@@ -202,18 +196,31 @@
   ignore_errors: true
   when: iptables_needs_restart != 0 and firewalld_in_use.rc != 0 and firewalld_is_active.rc != 0
 
-- name: Run SteamCMD
-  command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir /home/7days/server +login {{steam_user}} {{steam_pass}} +set_steam_guard_code {{steam_code}} +app_update 294420 +quit"
+- name: Check group_vars/all.yml
+  fail:
+    msg="Edit steam_user and steam_pass in group_vars/all.yml for Steam, re-run Ansible **"
+  when: ((steam_user is none) and (steam_pass is none))
+  register: noconfig
+
+- debug: msg="*** 2) Check steam email, enter code in install/group_vars/all.yml and re-run Ansible ***"
+  when: (steam_code is none)
+
+# we use a dummy 4-char variable here to force steamcmd to exit after downloading
+- name: Downloading SteamCMD public game data
+  command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir /home/7days/server +set_steam_guard_code JJJJ +login {{steam_user}} {{steam_pass}} +app_update 294420 +quit"
+  args:
+    return_code: 0
+  when: (steam_code is none)
+  register: private_login_required
+  ignore_errors: true
   become: true
 
-- name: one
-  debug: msg="**1) Edit steam_user and steam_pass in group_vars/all.yml for Steam, re-run Ansible **"
-  when: ((steam_user is none) and (steam_pass is none))
+# only download private data when we have entered steam code
+- name: Downloading SteamCMD private game data
+  command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir /home/7days/server +set_steam_guard_code +login {{steam_user}} {{steam_pass}} +set_steam_guard_code {{steam_code}} +app_update 294420 +quit"
+  become: true
+  when: (private_login_required.skipped == True)
 
-- name: two
-  debug: msg="** 2) Run Ansible, check your email **"
-  when: ((steam_user is none) and (steam_pass is none))
-
-- name: three
-  debug: msg="** 1) Edit steam_code in group_vars/all.yml and run Ansible again **"
-  when: ((steam_code is none) and (steam_user is not none) and steam_pass is not none))
+- name: Enter Steam code
+  debug: msg="** 1) Check Email and enter steam code in group_vars/all.yml run Ansible again **"
+  when: (steam_code is none)
