@@ -43,7 +43,7 @@
     state=directory
     owner=7days
     recurse=yes
-    mode=755
+    mode=0755
 
 - name: Download SteamCMD
   get_url:
@@ -55,7 +55,7 @@
     dest=/home/7days/steamcmd/
     copy=no
     owner=7days
-    mode=755
+    mode=0755
   ignore_errors: true
 
 - name: Assign 7days server port values
@@ -64,39 +64,56 @@
     data_port: 25000
     when: ((seven_port is none) and (data_port is none))
 
+- name: Configure server variables
+  set_fact:
+    server_name: "{{ansible_hostname}} 7Days to Die Server"
+    server_pass: changeme
+    when: ((server_name is none) and (server_pass is none))
+
 # deploy 7days to die configs
-#- name: Generating 7days server config
-#  template:
-#    src=7days.conf.j2
-#    dest=/home/7days/server7days/7days.conf
-#    owner=root
-#    group=root
-#    mode=0644
-#  become: true
-#  register: 7days_needs_restart
+- name: Generate 7days server config
+  template:
+    src=serverconfig.xml.j2
+    dest=/home/7days/server/serverconfig.xml
+    owner=7days
+    group=7days
+    mode=0755
+  become: true
 
-# deploy basic nginx.conf 8080 vhost
-#- name: Generating something else here
-#  template:
-#    src=nginx.conf.j2
-#    dest=/etc/nginx/nginx.conf
-#    owner=root
-#    group=root
-#    mode=0644
-#  become: true
+# Setup 7days to die system service
+- name: Install 7days systemd unit file
+  copy:
+    src=7days.service
+    dest=/etc/systemd/system/7days.service
+    owner=root
+    group=root
+    mode=0644
+    force=no
+  become: true
 
-# start nginx service
-#- name: Start nginx service
-#  command: systemctl restart nginx.service
-#  ignore_errors: true
-#  when: nginx_needs_restart != 0
-#
-#- name: Set nginx to start on boot
-#  command: systemctl enable nginx.service
-#  ignore_errors: true
+# Copy startup script
+- name: Copy startup Script
+  copy:
+    src=startserver.sh
+    dest=/home/7days/server/startserver.sh
+    owner=7days
+    group=7days
+    mode=0755
+    force=no
+  ignore_errors: true
+  become: true
 
-# we need udp/80 and udp/8080 open
-# determine firewall status and take action
+- name: Make update script
+  template:
+    src=update_server.txt.j2
+    dest=/home/7days/steamcmd/update_server.txt
+    owner=7days
+    group=7days
+    mode=0755
+    force=no
+  ignore_errors: true
+  become: true
+
 # 1) use firewall-cmd if firewalld is utilized
 # 2) insert iptables rule if iptables is used
 
@@ -200,16 +217,14 @@
   fail:
     msg="Edit steam_user and steam_pass in group_vars/all.yml for Steam, re-run Ansible **"
   when: ((steam_user is none) and (steam_pass is none))
-  register: noconfig
 
-- debug: msg="*** 2) Check steam email, enter code in install/group_vars/all.yml and re-run Ansible ***"
+- name: Trigger Steamguard email
+  debug: msg="*** Get ready to check steam email, enter code in install/group_vars/all.yml and re-run Ansible ***"
   when: (steam_code is none)
 
 # we use a dummy 4-char variable here to force steamcmd to exit after downloading
 - name: Downloading SteamCMD public game data
   command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir /home/7days/server +set_steam_guard_code JJJJ +login {{steam_user}} {{steam_pass}} +app_update 294420 +quit"
-  args:
-    return_code: 0
   when: (steam_code is none)
   register: private_login_required
   ignore_errors: true
@@ -217,10 +232,19 @@
 
 # only download private data when we have entered steam code
 - name: Downloading SteamCMD private game data
-  command: "/home/7days/steamcmd/steamcmd.sh +force_install_dir /home/7days/server +set_steam_guard_code +login {{steam_user}} {{steam_pass}} +set_steam_guard_code {{steam_code}} +app_update 294420 +quit"
+  command: /home/7days/steamcmd/linux32/steamcmd +set_steam_guard_code {{steam_code}} +runscript update_server.txt
   become: true
-  when: (private_login_required.skipped == True)
+  ignore_errors: true
 
 - name: Enter Steam code
   debug: msg="** 1) Check Email and enter steam code in group_vars/all.yml run Ansible again **"
   when: (steam_code is none)
+
+- name: Enable 7Days service
+  command: systemctl restart 7days.service
+  ignore_errors: true
+  when: "private_login_required.skipped == true"
+
+- name: Enable 7Days service
+  service: name=7days state=started enabled=true
+  ignore_errors: true
