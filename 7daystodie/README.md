@@ -1,15 +1,13 @@
 ansible-7days
 =============
-Ansible Playbook for setting up a 7 Days to Die Server on CentOS/RHEL/Fedora
-
-![ELK](/image/ansible-elk.png?raw=true)
+Install and configure 7 Days to Die gameserver with Ansible
 
 **What does it do?**
-   - Automated deployment of a full ELK stack (Elasticsearch, Logstash, Kibana)
-     * Adds either iptables or firewalld rules if firewall is active
-     * Tunes Elasticsearch heapsize to half your memory, to a max of 32G
-     * Deploys ELK clients using SSL and Filebeat
-     * More information [available here](https://hobo.house/2016/04/08/automate-elk-stack-and-clients-with-ansible/)
+   - Automate deployment of 7 Days to Die Server
+     * Downloads and sets up SteamCMD
+     * Authorizes via Steamguard to pull down 7 Days to Die assets
+     * Drops in templated server configs, startup script
+     * Installs 7 Days to Die Systemd services for management
 
 **Requirements**
    - RHEL7 or CentOS7+ server/client with no modifications
@@ -18,40 +16,36 @@ Ansible Playbook for setting up a 7 Days to Die Server on CentOS/RHEL/Fedora
        - ```ansible fedora-client-01 -u root -m shell -i hosts -a "dnf install yum python2 libsemanage-python python2-dnf -y"```
    - Deployment tested on Ansible 1.9.4 and 2.0.2
 
-**Notes**
-   - Sets the nginx htpasswd to admin/admin initially
-   - nginx listen ports default to 80/8080 for Kibana and SSL cert retrieval
-     - You can modify this in the ```group_vars/all``` file
-   - Uses OpenJDK for Java
-   - It's fairly quick, takes around 3minutes on test VM
-   - Filebeat templating is focused around OpenStack service logs
-
-**ELK Server Instructions**
+**7 Days Server Instructions**
    - Clone repo and setup your hosts file
 ```
-git clone https://github.com/sadsfae/ansible-elk
-cd ansible-elk
-sed -i 's/host-01/elkserver/' hosts
-sed -i 's/host-02/elkclient/' hosts
+git clone https://github.com/sadsfae/ansible-7days
+cd ansible-7days
+sed -i 's/host-01/7daystodieserver/' hosts
+```
+   - Add your Steam ID and password here:
+```
+sed -i 's/steam_user:/steam_user: youruser/' install/group_vars/all.yml
+sed -i 's/steam_pass:/steam_pass: yourpass/' install/group_vars/all.yml
 ```
    - Run the playbook
 ```
-ansible-playbook -i hosts install/elk.yml
+ansible-playbook -i hosts install/7days.xml
 ```
-   - Navigate to the server at http://yourhost
-   - Default login is admin/admin
-![ELK](/image/elk-index.png?raw=true "Click the green button.")
+   - The first playbook run will download and setup SteamCMD
+   - It will also trigger steamguard, so you'll need to check your email
+![ELK](/image/steamcode.png?raw=true "Click the green button.")
 
-**ELK Client Instructions**
-   - Run the client playbook against the generated elk_server variable
+   - Add the Steamguard code sent via email 
 ```
-ansible-playbook -i hosts install/elk-client.yml --extra-vars 'elk_server=X.X.X.X'
+sed -i 's/steam_user:/steam_user: youruser/' install/group_vars/all.yml
 ```
-   - You can view a deployment video here:
-
-
-[![Ansible Elk](http://img.youtube.com/vi/6is6Ecxc2zE/0.jpg)](http://www.youtube.com/watch?v=6is6Ecxc2zE "Deploying ELK with Ansible")
-
+   - Run Ansible one more time
+```
+ansible-playbook -i hosts install/7days.yml
+```
+   * On subsequent runs Ansible will simply update SteamCMD, 7 days assets.
+   * I will also be adding ability to optionally import saved gamefiles
 
 **File Hierarchy**
 ```
