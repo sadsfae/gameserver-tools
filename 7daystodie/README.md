@@ -1,6 +1,7 @@
 ansible-7days
 =============
-Install and configure 7 Days to Die gameserver with Ansible
+I have moved this repo here instead:
+https://github.com/sadsfae/ansible-7days
 
 **What does it do?**
    - Automate deployment of 7 Days to Die Server
@@ -25,8 +26,8 @@ sed -i 's/host-01/7daystodieserver/' hosts
 ```
    - Add your Steam ID and password here:
 ```
-sed -i 's/steam_user:/steam_user: youruser/' install/group_vars/all.yml
-sed -i 's/steam_pass:/steam_pass: yourpass/' install/group_vars/all.yml
+sed -i 's/steam_user:/steam_user: YOURUSER/' install/group_vars/all.yml
+sed -i 's/steam_pass:/steam_pass: YOURPASS/' install/group_vars/all.yml
 ```
    - Run the playbook
 ```
@@ -34,20 +35,44 @@ ansible-playbook -i hosts install/7days.xml
 ```
    - The first playbook run will download and setup SteamCMD
    - It will also trigger steamguard, so you'll need to check your email
-![ELK](/image/steamcode.png?raw=true "Click the green button.")
+
+![7Days](/image/steam_auth.png?raw=true "Enter this code in install/group_vars/all.yml.")
 
    - Add the Steamguard code sent via email 
 ```
-sed -i 's/steam_user:/steam_user: youruser/' install/group_vars/all.yml
+sed -i 's/steam_code:/steam_code: STEAMCODE/' install/group_vars/all.yml
 ```
    - Run Ansible one more time
 ```
 ansible-playbook -i hosts install/7days.yml
 ```
-   * On subsequent runs Ansible will simply update SteamCMD, 7 days assets.
-   * I will also be adding ability to optionally import saved gamefiles
+   * On subsequent runs Ansible will simply update SteamCMD, 7 days assets and
+     restart the 7days systemd service.
+
+**To Do**
+   - Add optional ability to import saved games
+   - Flesh out firewall rules more to include ranges
+   - Expand server config variables
 
 **File Hierarchy**
 ```
+├── hosts
+├── image
+│   └── steam_auth.png
+└── install
+    ├── 7days.yml
+    ├── group_vars
+    │   └── all.yml
+    ├── roles
+    │   └── 7server
+    │       ├── files
+    │       │   ├── 7days.service
+    │       │   └── startserver.sh
+    │       ├── tasks
+    │       │   └── main.yml
+    │       └── templates
+    │           ├── serverconfig.xml.j2
+    │           └── update_server.txt.j2
+    └── vars
+        └── all.yml
 ```
-
