@@ -17,7 +17,7 @@ exec >> $server-$port-restartlog 2>&1
 
 check_player_count() {
     status=$(quakestat $game $server:$port | grep $server | awk '{print $2}' | awk -F "/" '{print $1}')
-    if [[ $status -ne "0" ]] || [[ $status != "DOWN" ]];
+    if [[ $status -ne "0" ]] && [[ $status != "DOWN" ]];
     then
         echo "$status players are active running as pid $serverpid, quitting"
     else
